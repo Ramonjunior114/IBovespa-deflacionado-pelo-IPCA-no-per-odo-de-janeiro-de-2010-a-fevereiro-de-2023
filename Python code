@@ -1,0 +1,49 @@
+import yfinance as yf
+import pandas as pd
+import matplotlib.pyplot as plt
+import quandl
+
+
+# Chave de API do Quandl
+quandl.ApiConfig.api_key = 'Adicione sua chave do QuandI'
+
+
+# Defina o ticker para o índice Bovespa
+ticker_bovespa = '^BVSP'
+
+
+# Defina o intervalo de datas
+data_inicial = '2010-01-01'
+data_final = '2023-02-28'
+
+
+# Baixe os dados históricos
+dados_bovespa = yf.download(ticker_bovespa, start=data_inicial, end=data_final)
+
+
+# Baixe os dados do IPCA do Quandl
+dados_ipca = quandl.get('BCB/433', start_date=data_inicial, end_date=data_final)
+
+
+# Calcule o IPCA acumulado
+ipca_acumulado = (dados_ipca['Value'] / 100 + 1).cumprod()
+
+
+# Reamostrar ambos os conjuntos de dados para ter as mesmas datas
+bovespa_mensal = dados_bovespa['Adj Close'].resample('M').last()
+ipca_mensal = ipca_acumulado.resample('M').last()
+
+
+# Alinhe as datas de ambos os conjuntos de dados
+dados_alinhados = bovespa_mensal.align(ipca_mensal, join='inner')
+
+
+# Deflacione o índice Bovespa pelo IPCA
+bovespa_deflacionado = dados_alinhados[0] / dados_alinhados[1]
+
+
+# Plote o índice IBovespa deflacionado pelo IPCA
+bovespa_deflacionado.plot(title='IBovespa Deflacionado pelo IPCA')
+plt.xlabel('Data')
+plt.ylabel('Valor Deflacionado')
+plt.show()
